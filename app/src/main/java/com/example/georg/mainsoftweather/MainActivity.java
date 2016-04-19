@@ -23,10 +23,18 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.example.georg.mainsoftweather.pojo.Model;
+
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+
+import retrofit.Call;
+import retrofit.Callback;
+import retrofit.GsonConverterFactory;
+import retrofit.Response;
+import retrofit.Retrofit;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -105,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        if (!mSettings.contains(APP_PREFERENCES_FIRST_LAUNCH)) {
+        //if (!mSettings.contains(APP_PREFERENCES_FIRST_LAUNCH)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                     startSearchLocation();
@@ -123,7 +131,7 @@ public class MainActivity extends AppCompatActivity {
             SharedPreferences.Editor editor = mSettings.edit();
             editor.putBoolean(APP_PREFERENCES_FIRST_LAUNCH, true);
             editor.apply();
-       }
+       //}
 
     }
 
@@ -138,7 +146,11 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onLocationChanged(Location location) {
             Log.d(GPS_LOG, "onLocationChanged: " + location.toString());
-            getCityName(location);
+            String cityName = getCityName(location);
+            if (cityName != null) {
+                getWeather(cityName);
+                stopSearchLocation(false);
+            }
         }
 
         @Override
@@ -183,7 +195,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        stopSearchLocation(false);
 
         return cityName;
     }
@@ -232,6 +243,44 @@ public class MainActivity extends AppCompatActivity {
                         });
         AlertDialog alert = builder.create();
         alert.show();
+    }
+
+    private void getWeather(String cityName){
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(RestApi.URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        RestApi service = retrofit.create(RestApi.class);
+
+        Call<Model> call = service.getWheatherReport(cityName);
+
+        call.enqueue(new Callback<Model>() {
+            @Override
+            public void onResponse(Response<Model> response, Retrofit retrofit) {
+
+                try {
+                    String city = response.body().getName();
+
+                    String status = response.body().getWeather().get(0).getDescription();
+
+                    String humidity = response.body().getMain().getHumidity().toString();
+
+                    String pressure = response.body().getMain().getPressure().toString();
+
+                    Toast.makeText(MainActivity.this,"city  :  " + city + " status  :  " + status + " humidity  : " + humidity + " pressure  :  " + pressure, Toast.LENGTH_LONG).show();
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+
+            }
+        });
     }
 }
 
