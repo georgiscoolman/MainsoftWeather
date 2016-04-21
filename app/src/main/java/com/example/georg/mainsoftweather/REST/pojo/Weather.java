@@ -1,5 +1,5 @@
 
-package com.example.georg.mainsoftweather.pojo;
+package com.example.georg.mainsoftweather.rest.pojo;
 
 import com.google.gson.annotations.Expose;
 

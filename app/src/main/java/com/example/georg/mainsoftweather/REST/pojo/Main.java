@@ -1,5 +1,5 @@
 
-package com.example.georg.mainsoftweather.pojo;
+package com.example.georg.mainsoftweather.rest.pojo;
 
 import com.google.gson.annotations.Expose;
 
@@ -23,4 +23,18 @@ public class Main {
     public Integer getPressure() {
         return pressure;
     }
+
+    public Double getTemp() {
+        return temp;
+    }
+
+    public Double getTempMin() {
+        return tempMin;
+    }
+
+    public Double getTempMax() {
+        return tempMax;
+    }
+
+
 }

@@ -1,6 +1,5 @@
 package com.example.georg.mainsoftweather;
 
-import android.Manifest;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -12,20 +11,22 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.example.georg.mainsoftweather.pojo.Model;
+import com.example.georg.mainsoftweather.rest.RestApi;
+import com.example.georg.mainsoftweather.orm.HelperFactory;
+import com.example.georg.mainsoftweather.rest.pojo.Model;
+import com.example.georg.mainsoftweather.orm.entitys.City;
+import com.example.georg.mainsoftweather.orm.entitys.MyWeather;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -113,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        //if (!mSettings.contains(APP_PREFERENCES_FIRST_LAUNCH)) {
+/*        //if (!mSettings.contains(APP_PREFERENCES_FIRST_LAUNCH)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                     startSearchLocation();
@@ -131,7 +132,9 @@ public class MainActivity extends AppCompatActivity {
             SharedPreferences.Editor editor = mSettings.edit();
             editor.putBoolean(APP_PREFERENCES_FIRST_LAUNCH, true);
             editor.apply();
-       //}
+       //}*/
+
+        getWeather("Minsk");
 
     }
 
@@ -253,25 +256,31 @@ public class MainActivity extends AppCompatActivity {
 
         RestApi service = retrofit.create(RestApi.class);
 
-        Call<Model> call = service.getWheatherReport(cityName);
+        Call<Model> call = service.getWheatherReportByCityName(cityName);
 
         call.enqueue(new Callback<Model>() {
             @Override
             public void onResponse(Response<Model> response, Retrofit retrofit) {
 
-                try {
-                    String city = response.body().getName();
+                if (response != null) {
 
-                    String status = response.body().getWeather().get(0).getDescription();
+                    Model model = response.body();
 
-                    String humidity = response.body().getMain().getHumidity().toString();
+                    City city = new City(model);
+                    try {
+                        HelperFactory.getHelper().getDao(City.class).createOrUpdate(city);
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
 
-                    String pressure = response.body().getMain().getPressure().toString();
+                    MyWeather myWeather = new MyWeather(model, city);
+                    try {
+                        HelperFactory.getHelper().getDao(MyWeather.class).createOrUpdate(myWeather);
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
 
-                    Toast.makeText(MainActivity.this,"city  :  " + city + " status  :  " + status + " humidity  : " + humidity + " pressure  :  " + pressure, Toast.LENGTH_LONG).show();
-
-                } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.d("data", city.toString() + " " + myWeather.toString());
                 }
 
             }
