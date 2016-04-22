@@ -13,6 +13,7 @@ public interface RestApi {
 
     String URL = "http://api.openweathermap.org";
     String API_KEY = "e96b626a0cb231086ffea9d1f23488bd";
+    //units=metric
 
     @GET("/data/2.5/weather?appid=" + API_KEY)
     Call<Model> getWheatherReportByCityName(@Query("q") String cityName);

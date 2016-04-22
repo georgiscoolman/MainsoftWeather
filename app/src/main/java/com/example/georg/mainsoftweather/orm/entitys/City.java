@@ -47,6 +47,22 @@ public class City implements BaseEntity{
         }
     }
 
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public Collection<MyWeather> getWeatherLog() {
+        return weatherLog;
+    }
+
     @Override
     public String toString() {
         return "id " + id + " name " + name + " country " + country;

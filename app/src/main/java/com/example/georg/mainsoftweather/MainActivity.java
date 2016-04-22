@@ -1,5 +1,6 @@
 package com.example.georg.mainsoftweather;
 
+import android.Manifest;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -11,14 +12,25 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.widget.Toast;
 
+import com.example.georg.mainsoftweather.preview.PreviewCityWeather;
 import com.example.georg.mainsoftweather.rest.RestApi;
 import com.example.georg.mainsoftweather.orm.HelperFactory;
 import com.example.georg.mainsoftweather.rest.pojo.Model;
@@ -27,6 +39,7 @@ import com.example.georg.mainsoftweather.orm.entitys.MyWeather;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -37,7 +50,7 @@ import retrofit.GsonConverterFactory;
 import retrofit.Response;
 import retrofit.Retrofit;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SearchView.OnQueryTextListener{
 
     private ProgressDialog searchLocationDialog;
     private LocationManager locationManager;
@@ -53,6 +66,10 @@ public class MainActivity extends AppCompatActivity {
 
     // Key e96b626a0cb231086ffea9d1f23488bd
 
+    private RecyclerView mRecyclerView;
+    private CitiesAdapter adapter;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,6 +77,11 @@ public class MainActivity extends AppCompatActivity {
 
         mSettings = getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        mRecyclerView = (RecyclerView) findViewById(R.id.rv_cities);
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        mRecyclerView.setHasFixedSize(true);
+
+        refreshList();
 
     }
 
@@ -105,7 +127,6 @@ public class MainActivity extends AppCompatActivity {
                 if (isTimeEnd){
                     showFailGetGPSDialog();
                 }
-
             }
         }
     }
@@ -114,7 +135,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-/*        //if (!mSettings.contains(APP_PREFERENCES_FIRST_LAUNCH)) {
+        if (!mSettings.contains(APP_PREFERENCES_FIRST_LAUNCH)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                     startSearchLocation();
@@ -132,9 +153,12 @@ public class MainActivity extends AppCompatActivity {
             SharedPreferences.Editor editor = mSettings.edit();
             editor.putBoolean(APP_PREFERENCES_FIRST_LAUNCH, true);
             editor.apply();
-       //}*/
+       }
 
-        getWeather("Minsk");
+        refreshList();
+
+       // getWeather("Minsk");
+
 
     }
 
@@ -197,7 +221,6 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(GPS_LOG, "City name is unknown");
             }
         }
-
 
         return cityName;
     }
@@ -280,6 +303,8 @@ public class MainActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
 
+                    refreshList();
+
                     Log.d("data", city.toString() + " " + myWeather.toString());
                 }
 
@@ -287,9 +312,54 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Throwable t) {
-
+                Log.d("data", t.toString());
             }
         });
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+
+        final MenuItem item = menu.findItem(R.id.action_search);
+        final SearchView searchView = (SearchView) MenuItemCompat.getActionView(item);
+        searchView.setQueryHint(getString(R.string.city_name));
+        searchView.setOnQueryTextListener(this);
+
+        return true;
+    }
+
+
+    @Override
+    public boolean onQueryTextSubmit(String query) {
+        return false;
+    }
+
+    @Override
+    public boolean onQueryTextChange(String newText) {
+        return false;
+    }
+
+    private void refreshList(){
+
+        List<City> cities = new ArrayList<>();
+
+        try {
+            cities = HelperFactory.getHelper().getDao(City.class).queryForAll();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        if (adapter==null){
+            adapter = new CitiesAdapter(this, PreviewCityWeather.fromArray(cities));
+            adapter.setHasStableIds(true);
+            mRecyclerView.setAdapter(adapter);
+        }
+        else {
+            adapter.setCityWeathers(PreviewCityWeather.fromArray(cities));
+            mRecyclerView.scrollToPosition(0);
+        }
+
     }
 }
 

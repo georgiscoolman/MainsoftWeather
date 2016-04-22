@@ -8,7 +8,7 @@ public class Main {
     @Expose
     public Double temp;
     @Expose
-    public Integer pressure;
+    public Double pressure;
     @Expose
     public Integer humidity;
     @Expose
@@ -20,7 +20,7 @@ public class Main {
         return humidity;
     }
 
-    public Integer getPressure() {
+    public Double getPressure() {
         return pressure;
     }
 

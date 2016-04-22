@@ -4,7 +4,6 @@ import com.example.georg.mainsoftweather.rest.pojo.Main;
 import com.example.georg.mainsoftweather.rest.pojo.Model;
 import com.example.georg.mainsoftweather.rest.pojo.Weather;
 import com.example.georg.mainsoftweather.rest.pojo.Wind;
-import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
@@ -23,6 +22,7 @@ public class MyWeather implements BaseEntity{
     public static final String TABLE_NAME = "Weather";
 
     public static final String DESCRIPTION = "description";
+    public static final String ICON = "icon";
     public static final String DATE = "date";
     public static final String TEMP = "temp";
     public static final String TEMP_MAX = "tempMax";
@@ -39,6 +39,8 @@ public class MyWeather implements BaseEntity{
     private Date date;
     @DatabaseField(columnName = DESCRIPTION)
     private String description;
+    @DatabaseField(columnName = ICON)
+    private String icon;
     @DatabaseField(columnName = TEMP)
     private Double temp;
     @DatabaseField(columnName = TEMP_MAX)
@@ -46,7 +48,7 @@ public class MyWeather implements BaseEntity{
     @DatabaseField(columnName = TEMP_MIN)
     private Double tempMin;
     @DatabaseField(columnName = PRESSURE)
-    private Integer pressure;
+    private Double pressure;
     @DatabaseField(columnName = HUMIDITY)
     private Integer humidity;
     @DatabaseField(columnName = WIND_SPEED)
@@ -82,6 +84,7 @@ public class MyWeather implements BaseEntity{
             Weather weather = model.getWeather().get(0);
             if (weather!=null){
                 description = weather.getDescription();
+                icon = weather.getIcon();
             }
 
             if (city!=null){
@@ -92,11 +95,55 @@ public class MyWeather implements BaseEntity{
 
     }
 
+    public Long getId() {
+        return id;
+    }
+
+    public Date getDate() {
+        return date;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public String getIcon() {
+        return icon;
+    }
+
+    public Double getTemp() {
+        return temp;
+    }
+
+    public Double getTempMax() {
+        return tempMax;
+    }
+
+    public Double getTempMin() {
+        return tempMin;
+    }
+
+    public Double getPressure() {
+        return pressure;
+    }
+
+    public Integer getHumidity() {
+        return humidity;
+    }
+
+    public Double getWindSpeed() {
+        return windSpeed;
+    }
+
+    public String getDateReadable(){
+        return sdfmad.format(date);
+    }
+
     @Override
     public String toString() {
         sdfmad.setTimeZone(TimeZone.getDefault());
-        return "id " + id + " date " + sdfmad.format(date) + " temp " + temp + " tempMax " + tempMax + " tempMin " + tempMin + " pressure "
-                + pressure + " humidity " + humidity + " windSpeed " + windSpeed + " description " + description;
+        return "id " + id + " date " + getDateReadable() + " temp " + temp + " tempMax " + tempMax + " tempMin " + tempMin + " pressure "
+                + pressure + " humidity " + humidity + " windSpeed " + windSpeed + " description " + description + " icon " + icon;
     }
 
 }
