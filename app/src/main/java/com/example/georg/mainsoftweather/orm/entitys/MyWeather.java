@@ -17,7 +17,7 @@ import java.util.TimeZone;
 @DatabaseTable(tableName = MyWeather.TABLE_NAME)
 public class MyWeather implements BaseEntity{
 
-    public SimpleDateFormat sdfmad = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+    public SimpleDateFormat sdfmad = new SimpleDateFormat("dd.MM.yyyy HH:mm");
 
     public static final String TABLE_NAME = "Weather";
 

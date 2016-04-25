@@ -2,4 +2,15 @@
     <string name="app_name">MainsoftWeather</string>
     <string name="action_search">Search</string>
     <string name="city_name">City name</string>
+    <string name="empty_list">Please, use search to find your city</string>
+    <string name="turn_on_gps">To find your location turn on GPS</string>
+    <string name="turn_on_gps_header">Turn on GPS</string>
+    <string name="explain_gps">To find your location allow GPS access</string>
+    <string name="allow_gps">Allow GPS access</string>
+    <string name="location_undefind">Sorry, your location is undefined</string>
+    <string name="check_internet">Check your internet connection</string>
+    <string name="no_server">No server connection</string>
+    <string name="search_location">Searching location</string>
+    <string name="searching_location">Searching your location</string>
+    <string name="refresh_list">Refresh</string>
 </resources>
