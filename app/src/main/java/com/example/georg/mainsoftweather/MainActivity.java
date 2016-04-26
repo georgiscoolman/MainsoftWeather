@@ -291,10 +291,6 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
 
     private void getWeather(String cityName){
 
-        if (!swipeRefreshLayout.isRefreshing()){
-            swipeRefreshLayout.setRefreshing(true);
-        }
-
         Call<Model> call = service.getWheatherReportByCityName(cityName);
 
         call.enqueue(new Callback<Model>() {
@@ -305,7 +301,6 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
                     @Override
                     protected Void doInBackground(Response<Model>... params) {
                         saveWeatherResponse(params[0]);
-                        swipeRefreshLayout.setRefreshing(false);
                         return null;
                     }
                 };
@@ -314,8 +309,6 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
 
             @Override
             public void onFailure(Throwable t) {
-                Log.e(DATA_TAG, t.toString());
-                swipeRefreshLayout.setRefreshing(false);
                 Utils.showOkDialog(MainActivity.this, getString(R.string.no_server), getString(R.string.check_internet));
             }
         });

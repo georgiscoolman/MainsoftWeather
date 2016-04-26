@@ -34,8 +34,9 @@
             <ImageView
                 android:layout_marginRight="8dp"
                 android:id="@+id/icon"
-                android:layout_width="50px"
-                android:layout_height="50px" />
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:scaleType="fitXY"/>
 
             <TextView
                 android:id="@+id/temp"
@@ -53,13 +54,13 @@
                 android:gravity="right">
 
                 <TextView
-                    android:id="@+id/temp_min"
+                    android:id="@+id/temp_max"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="22 C"/>
 
                 <TextView
-                    android:id="@+id/tempMax"
+                    android:id="@+id/temp_min"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="22 C"/>

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MainsoftWeather</string>
+    <string name="app_name">Weather</string>
     <string name="action_search">Search</string>
     <string name="city_name">City name</string>
     <string name="empty_list">Please, use search to find your city</string>
@@ -13,4 +13,8 @@
     <string name="search_location">Searching location</string>
     <string name="searching_location">Searching your location</string>
     <string name="refresh_list">Refresh</string>
+    <string name="max_temp_format" formatted="false">max %s \u2103</string>
+    <string name="city_country_format" formatted="false">%s, %s</string>
+    <string name="temp_format" formatted="false">%s \u2103</string>
+    <string name="min_temp_format" formatted="false">min %s \u2103</string>
 </resources>
