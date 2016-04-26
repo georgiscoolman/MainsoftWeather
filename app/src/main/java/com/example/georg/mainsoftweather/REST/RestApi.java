@@ -1,11 +1,14 @@
 package com.example.georg.mainsoftweather.rest;
 
 import com.example.georg.mainsoftweather.rest.pojo.Model;
+import com.example.georg.mainsoftweather.rest.pojo.WeatherList;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import retrofit.Call;
 import retrofit.http.Query;
 import retrofit.http.GET;
-import retrofit2.http.Path;
 
 /**
  * Created by Georg on 19.04.2016.
@@ -19,7 +22,7 @@ public interface RestApi {
     @GET("/data/2.5/weather?appid=" + API_KEY + METRIC)
     Call<Model> getWheatherReportByCityName(@Query("q") String cityName);
 
-    @GET("/data/2.5/weather?appid=" + API_KEY + METRIC)
-    Call<Model> getWheatherReportByCityId(@Query("id") int id);
+    @GET("/data/2.5/group?appid=" + API_KEY + METRIC)
+    Call<WeatherList> getWheatherReportBySeveralCityId(@Query("id") String ids);
 
 }

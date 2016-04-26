@@ -96,17 +96,17 @@ public class CityWeatherViewHolder extends RecyclerView.ViewHolder {
             Double prs = weather.getPressure();
             if (prs!=null) {
                 pressure.setVisibility(View.VISIBLE);
-                pressure.setText(String.format("pressure %s", String.valueOf(Math.round(prs))));
+                pressure.setText(String.format(context.getString(R.string.pressure_format), String.valueOf(Math.round(prs))));
             }else {
                 pressure.setVisibility(View.GONE);
             }
 
-            humidity.setText("humidity " + String.valueOf(weather.getHumidity()));
+            humidity.setText(String.format(context.getString(R.string.humidity_format), String.valueOf(weather.getHumidity())));
 
             Double wnd = weather.getWindSpeed();
             if (wnd!=null) {
                 wind.setVisibility(View.VISIBLE);
-                wind.setText("wind " + String.valueOf(Math.round(wnd)));
+                wind.setText(String.format(context.getString(R.string.wind_format), String.valueOf(Math.round(wnd))));
             }else {
                 wind.setVisibility(View.GONE);
             }

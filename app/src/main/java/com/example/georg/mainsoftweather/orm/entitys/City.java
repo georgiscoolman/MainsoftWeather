@@ -1,12 +1,18 @@
 package com.example.georg.mainsoftweather.orm.entitys;
 
+import com.example.georg.mainsoftweather.orm.DaoFactory;
 import com.example.georg.mainsoftweather.rest.pojo.Model;
 import com.example.georg.mainsoftweather.rest.pojo.Sys;
+import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.field.ForeignCollectionField;
+import com.j256.ormlite.stmt.PreparedQuery;
 import com.j256.ormlite.table.DatabaseTable;
 
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Created by Georg on 21.04.2016.
@@ -66,5 +72,31 @@ public class City implements BaseEntity{
     @Override
     public String toString() {
         return "id " + id + " name " + name + " country " + country;
+    }
+
+    public static String getAllCitiesId(){
+        StringBuilder ids = new StringBuilder();
+
+        Dao<City, Integer> dao = null;
+
+        try {
+            dao = DaoFactory.getInstance().getDao(City.class);
+
+            PreparedQuery<City> query =  dao.queryBuilder().selectColumns(ID).prepare();
+
+            ArrayList<City> cities = (ArrayList<City>) dao.query(query);
+
+            for (int i = 0; i < cities.size(); i++) {
+                if (i!=0){
+                    ids.append(',');
+                }
+                ids.append(String.valueOf(cities.get(i).getId()));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return ids.toString();
     }
 }

@@ -17,4 +17,9 @@
     <string name="city_country_format" formatted="false">%s, %s</string>
     <string name="temp_format" formatted="false">%s \u2103</string>
     <string name="min_temp_format" formatted="false">min %s \u2103</string>
+    <string name="getting_weather_title">Getting weather</string>
+    <string name="getting_weather_format" formatted="false">Getting weather for %s</string>
+    <string name="pressure_format" formatted="false">Pressure %s hPa</string>
+    <string name="humidity_format" formatted="false">Humidity %s %%</string>
+    <string name="wind_format" formatted="false">Wind %s mps</string>
 </resources>

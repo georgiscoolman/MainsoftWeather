@@ -30,7 +30,7 @@ public class PreviewCityWeatherLoader  extends AsyncTaskLoader<List<PreviewCityW
         List<City> cities = new ArrayList<>();
 
         try {
-            cities = HelperFactory.getHelper().getDao(City.class).queryForAll();
+            cities = DaoFactory.getInstance().getDao(City.class).queryForAll();
         } catch (SQLException e) {
             e.printStackTrace();
         }

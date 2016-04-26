@@ -4,6 +4,7 @@ import com.example.georg.mainsoftweather.rest.pojo.Main;
 import com.example.georg.mainsoftweather.rest.pojo.Model;
 import com.example.georg.mainsoftweather.rest.pojo.Weather;
 import com.example.georg.mainsoftweather.rest.pojo.Wind;
+import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
@@ -35,7 +36,7 @@ public class MyWeather implements BaseEntity{
 
     @DatabaseField(columnName = ID, generatedId = true)
     private Long id;
-    @DatabaseField(columnName = DATE)
+    @DatabaseField(columnName = DATE, dataType = DataType.DATE_LONG)
     private Date date;
     @DatabaseField(columnName = DESCRIPTION)
     private String description;
@@ -136,12 +137,12 @@ public class MyWeather implements BaseEntity{
     }
 
     public String getDateReadable(){
+        sdfmad.setTimeZone(TimeZone.getDefault());
         return sdfmad.format(date);
     }
 
     @Override
     public String toString() {
-        sdfmad.setTimeZone(TimeZone.getDefault());
         return "id " + id + " date " + getDateReadable() + " temp " + temp + " tempMax " + tempMax + " tempMin " + tempMin + " pressure "
                 + pressure + " humidity " + humidity + " windSpeed " + windSpeed + " description " + description + " icon " + icon;
     }

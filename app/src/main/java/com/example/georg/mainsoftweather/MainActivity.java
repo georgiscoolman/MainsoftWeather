@@ -1,7 +1,6 @@
 package com.example.georg.mainsoftweather;
 
 import android.Manifest;
-import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -24,7 +23,6 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.content.Loader;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -34,15 +32,16 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.example.georg.mainsoftweather.orm.HelperFactory;
+
+import com.example.georg.mainsoftweather.orm.DaoFactory;
 import com.example.georg.mainsoftweather.orm.PreviewCityWeatherLoader;
 import com.example.georg.mainsoftweather.orm.entitys.City;
 import com.example.georg.mainsoftweather.orm.entitys.MyWeather;
 import com.example.georg.mainsoftweather.preview.PreviewCityWeather;
 import com.example.georg.mainsoftweather.rest.RestApi;
 import com.example.georg.mainsoftweather.rest.pojo.Model;
+import com.example.georg.mainsoftweather.rest.pojo.WeatherList;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -60,6 +59,7 @@ import retrofit.Retrofit;
 public class MainActivity extends AppCompatActivity implements SearchView.OnQueryTextListener , LoaderManager.LoaderCallbacks<List<PreviewCityWeather>>{
 
     private ProgressDialog searchLocationDialog;
+    private ProgressDialog getWeatherDialog;
     private LocationManager locationManager;
 
     private SharedPreferences mSettings;
@@ -113,7 +113,7 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
         swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-
+                refreshWeathers();
             }
         });
     }
@@ -130,18 +130,14 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
             Runnable r = new Runnable() {
                 @Override
                 public void run() {
-                    stopSearchLocation(false,false);
+                    stopSearchLocation(false);
                 }
             };
             h.postDelayed(r,SEARCH_GPS_TIME);
 
-            searchLocationDialog = new ProgressDialog(this);
-            searchLocationDialog.setTitle(getString(R.string.search_location));
-            searchLocationDialog.setMessage(getString(R.string.searching_location));
-            searchLocationDialog.setCancelable(false);
-            searchLocationDialog.setButton(Dialog.BUTTON_NEGATIVE, getString(android.R.string.cancel), new DialogInterface.OnClickListener() {
+            searchLocationDialog = Utils.initProgressDialog(this,getString(R.string.search_location),getString(R.string.searching_location),new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int which) {
-                    stopSearchLocation(true,false);
+                    stopSearchLocation(true);
                 }
             });
             searchLocationDialog.show();
@@ -156,18 +152,13 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
         }
     }
 
-    private void stopSearchLocation(boolean isUserStop, boolean succes) {
+    private void stopSearchLocation(boolean isUserStop) {
         if (locationManager != null)
-        locationManager.removeUpdates(locationListener);
+            locationManager.removeUpdates(locationListener);
+
+        Utils.dissmissDialog(searchLocationDialog);
 
         if (isUserStop) {
-            if (searchLocationDialog != null) {
-                if (searchLocationDialog.isShowing()) {
-                    searchLocationDialog.dismiss();
-                }
-            }
-        }else {
-            if (!succes)
             Utils.showOkDialog(this, getString(R.string.location_undefind), getString(R.string.empty_list));
         }
 
@@ -199,14 +190,14 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
 
         //getWeather("Madrid");
 
-        refreshList();
+        refreshPreviewList();
 
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        stopSearchLocation(true,false);
+        stopSearchLocation(false);
     }
 
     private LocationListener locationListener = new LocationListener() {
@@ -217,7 +208,7 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
             String cityName = getCityName(location);
             if (cityName != null) {
                 getWeather(cityName);
-                stopSearchLocation(false,true);
+                stopSearchLocation(false);
             }
         }
 
@@ -291,6 +282,9 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
 
     private void getWeather(String cityName){
 
+        getWeatherDialog = Utils.initProgressDialog(this,getString(R.string.getting_weather_title), String.format(getString(R.string.getting_weather_format), cityName));
+        getWeatherDialog.show();
+
         Call<Model> call = service.getWheatherReportByCityName(cityName);
 
         call.enqueue(new Callback<Model>() {
@@ -300,8 +294,17 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
                 AsyncTask<Response<Model>,Void,Void> saveDataTask = new AsyncTask<Response<Model>, Void, Void>() {
                     @Override
                     protected Void doInBackground(Response<Model>... params) {
-                        saveWeatherResponse(params[0]);
+                        Response<Model> rsp = params[0];
+
+                        if (rsp != null)
+                            saveWeather(rsp.body(),true);
                         return null;
+                    }
+
+                    @Override
+                    protected void onPostExecute(Void aVoid) {
+                        super.onPostExecute(aVoid);
+                        Utils.dissmissDialog(getWeatherDialog);
                     }
                 };
                 saveDataTask.execute(response);
@@ -309,34 +312,33 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
 
             @Override
             public void onFailure(Throwable t) {
+                Utils.dissmissDialog(getWeatherDialog);
                 Utils.showOkDialog(MainActivity.this, getString(R.string.no_server), getString(R.string.check_internet));
             }
         });
     }
 
-    private void saveWeatherResponse(Response<Model> response) {
-        if (response != null) {
+    private void saveWeather(Model model, boolean refreshPrewiew) {
 
-            Model model = response.body();
-
-            City city = new City(model);
-            try {
-                HelperFactory.getHelper().getDao(City.class).createOrUpdate(city);
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-
-            MyWeather myWeather = new MyWeather(model, city);
-            try {
-                HelperFactory.getHelper().getDao(MyWeather.class).createOrUpdate(myWeather);
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-
-            mLoader.onContentChanged();
-
-            Log.d(DATA_TAG, city.toString() + " " + myWeather.toString());
+        City city = new City(model);
+        try {
+            DaoFactory.getInstance().getDao(City.class).createOrUpdate(city);
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
+
+        MyWeather myWeather = new MyWeather(model, city);
+        try {
+            DaoFactory.getInstance().getDao(MyWeather.class).createOrUpdate(myWeather);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        if (refreshPrewiew)
+        mLoader.onContentChanged();
+
+        Log.d(DATA_TAG, city.toString() + " " + myWeather.toString());
+
     }
 
     @Override
@@ -352,6 +354,16 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
     }
 
     @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        if (item.getItemId() == R.id.menu_refresh){
+            refreshWeathers();
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
     public boolean onQueryTextSubmit(String query) {
         getWeather(query);
         return false;
@@ -362,7 +374,7 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
         return false;
     }
 
-    private void refreshList(){
+    private void refreshPreviewList(){
 
         if (previewCityWeathers!=null) {
             if (previewCityWeathers.size() > 0) {
@@ -403,13 +415,71 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
 
         if (loader.getId() == LOADER_ID){
             previewCityWeathers = (ArrayList<PreviewCityWeather>) data;
-            refreshList();
+            refreshPreviewList();
         }
     }
 
     @Override
     public void onLoaderReset(Loader<List<PreviewCityWeather>> loader) {
         Log.d(LOADER_TAG, "onLoaderReset");
+    }
+
+    private void refreshWeathers(){
+
+        new AsyncTask<Void, Void, String>() {
+            @Override
+            protected String doInBackground(Void... params) {
+                return City.getAllCitiesId();
+            }
+
+            @Override
+            protected void onPostExecute(String ids) {
+                super.onPostExecute(ids);
+
+                Call<WeatherList> call = service.getWheatherReportBySeveralCityId(ids);
+
+                call.enqueue(new Callback<WeatherList>() {
+                    @Override
+                    public void onResponse(final Response<WeatherList> response, Retrofit retrofit) {
+
+                        new AsyncTask<Response<WeatherList>, Void, Void>() { // parsing and saving data
+                            @Override
+                            protected Void doInBackground(Response<WeatherList>... params) {
+                                Response<WeatherList> rsp = params[0];
+
+                                WeatherList list = null;
+                                if (rsp != null){
+                                    list = rsp.body();
+                                }
+
+                                if (list!= null){
+                                    ArrayList<Model> models = (ArrayList<Model>) list.getList();
+                                    for (Model model : models) {
+                                        saveWeather(model,false);
+                                    }
+                                    mLoader.onContentChanged();
+                                }
+                                return null;
+                            }
+
+                            @Override
+                            protected void onPostExecute(Void aVoid) {
+                                super.onPostExecute(aVoid);
+                                swipeRefreshLayout.setRefreshing(false);
+                            }
+                        }.execute(response);
+                    }
+
+                    @Override
+                    public void onFailure(Throwable t) {
+                        swipeRefreshLayout.setRefreshing(false);
+                        Utils.showOkDialog(MainActivity.this, getString(R.string.no_server), getString(R.string.check_internet));
+                    }
+                });
+
+            }
+        }.execute();
+
     }
 }
 
