@@ -23,6 +23,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.content.Loader;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -31,6 +32,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AbsListView;
 import android.widget.TextView;
 
 
@@ -74,8 +76,6 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
     public static final String DATA_TAG = "data";
     public static final String LOADER_TAG = "loader";
     public static final int LOADER_ID = 1;
-
-    // Key e96b626a0cb231086ffea9d1f23488bd
 
     private RecyclerView mRecyclerView;
     private TextView emptyView;
@@ -130,14 +130,14 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
             Runnable r = new Runnable() {
                 @Override
                 public void run() {
-                    stopSearchLocation(false);
+                    stopSearchLocation(true);
                 }
             };
             h.postDelayed(r,SEARCH_GPS_TIME);
 
             searchLocationDialog = Utils.initProgressDialog(this,getString(R.string.search_location),getString(R.string.searching_location),new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int which) {
-                    stopSearchLocation(true);
+                    stopSearchLocation(false);
                 }
             });
             searchLocationDialog.show();
@@ -152,13 +152,13 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
         }
     }
 
-    private void stopSearchLocation(boolean isUserStop) {
+    private void stopSearchLocation(boolean isTimeEnd) {
         if (locationManager != null)
             locationManager.removeUpdates(locationListener);
 
         Utils.dissmissDialog(searchLocationDialog);
 
-        if (isUserStop) {
+        if (isTimeEnd) {
             Utils.showOkDialog(this, getString(R.string.location_undefind), getString(R.string.empty_list));
         }
 
@@ -357,6 +357,7 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
     public boolean onOptionsItemSelected(MenuItem item) {
 
         if (item.getItemId() == R.id.menu_refresh){
+            swipeRefreshLayout.setRefreshing(true);
             refreshWeathers();
         }
 
@@ -480,6 +481,25 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
             }
         }.execute();
 
+    }
+
+    public void removeCity(int id){
+        new AsyncTask<Integer, Void, Void>(){
+            @Override
+            protected Void doInBackground(Integer... params) {
+                Integer id = params[0];
+                if (id != null){
+                    City.removeCity(id);
+                }
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Void aVoid) {
+                super.onPostExecute(aVoid);
+                mLoader.onContentChanged();
+            }
+        };
     }
 }
 

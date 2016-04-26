@@ -22,4 +22,5 @@
     <string name="pressure_format" formatted="false">Pressure %s hPa</string>
     <string name="humidity_format" formatted="false">Humidity %s %%</string>
     <string name="wind_format" formatted="false">Wind %s mps</string>
+    <string name="remove">"Remove "</string>
 </resources>

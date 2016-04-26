@@ -1,6 +1,7 @@
 package com.example.georg.mainsoftweather.preview;
 
 import android.content.Context;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
@@ -20,6 +21,7 @@ public class CityWeatherViewHolder extends RecyclerView.ViewHolder {
 
     private static final String WEB_IMAGES_FORMAT = "%s/img/w/%s.png";
 
+    public CardView root;
     TextView cityCountry;
     TextView temp;
     ImageView icon;
@@ -34,6 +36,7 @@ public class CityWeatherViewHolder extends RecyclerView.ViewHolder {
     public CityWeatherViewHolder(View itemView) {
         super(itemView);
 
+        root = (CardView) itemView.findViewById(R.id.root);
         cityCountry = (TextView) itemView.findViewById(R.id.city_country);
         temp = (TextView) itemView.findViewById(R.id.temp);
         icon = (ImageView) itemView.findViewById(R.id.icon);

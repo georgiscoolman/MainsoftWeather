@@ -99,4 +99,18 @@ public class City implements BaseEntity{
 
         return ids.toString();
     }
+
+    public static void removeCity(Integer id){
+
+        Dao<City, Integer> dao = null;
+
+        try {
+            dao = DaoFactory.getInstance().getDao(City.class);
+            dao.deleteById(id);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+    }
 }

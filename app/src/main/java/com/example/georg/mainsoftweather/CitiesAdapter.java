@@ -1,6 +1,8 @@
 package com.example.georg.mainsoftweather;
 
 import android.content.Context;
+import android.content.DialogInterface;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,10 +22,12 @@ public class CitiesAdapter extends RecyclerView.Adapter<CityWeatherViewHolder> {
 
     private  List<PreviewCityWeather> cityWeathers;
     private final LayoutInflater mInflater;
+    private Context context;
 
     public CitiesAdapter(Context context, List<PreviewCityWeather> cityWeathers) {
         this.cityWeathers = cityWeathers;
         this.mInflater = LayoutInflater.from(context);
+        this.context = context;
     }
 
     @Override
@@ -34,7 +38,15 @@ public class CitiesAdapter extends RecyclerView.Adapter<CityWeatherViewHolder> {
 
     @Override
     public void onBindViewHolder(CityWeatherViewHolder holder, int position) {
-        holder.bind(cityWeathers.get(position));
+        final PreviewCityWeather item = cityWeathers.get(position);
+        holder.bind(item);
+        holder.root.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                showRemoveCityDialog(item);
+                return false;
+            }
+        });
     }
 
     @Override
@@ -60,5 +72,27 @@ public class CitiesAdapter extends RecyclerView.Adapter<CityWeatherViewHolder> {
     public void setCityWeathers(List<PreviewCityWeather> cityWeathers) {
         this.cityWeathers = cityWeathers;
         notifyDataSetChanged();
+    }
+
+    public void showRemoveCityDialog(PreviewCityWeather weather){
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        final City city = weather.getCity();
+        builder.setTitle(context.getString(R.string.remove) + String.format(context.getString(R.string.city_country_format), city.getName(), city.getCountry()) )
+                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        if (context instanceof MainActivity){
+                            ((MainActivity) context).removeCity(city.getId().intValue());
+                        }
+                    }
+                })
+                .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+        AlertDialog alert = builder.create();
+        alert.show();
     }
 }
