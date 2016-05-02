@@ -77,7 +77,7 @@ public class CitiesAdapter extends RecyclerView.Adapter<CityWeatherViewHolder> {
     public void showRemoveCityDialog(PreviewCityWeather weather){
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         final City city = weather.getCity();
-        builder.setTitle(context.getString(R.string.remove) + String.format(context.getString(R.string.city_country_format), city.getName(), city.getCountry()) )
+        builder.setTitle(String.format(context.getString(R.string.remove_city_format), city.getName(), city.getCountry()) )
                 .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {

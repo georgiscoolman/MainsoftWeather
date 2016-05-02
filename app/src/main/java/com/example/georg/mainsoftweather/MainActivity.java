@@ -483,11 +483,11 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
 
     }
 
-    public void removeCity(int id){
-        new AsyncTask<Integer, Void, Void>(){
+    public void removeCity(long id){
+        new AsyncTask<Long, Void, Void>(){
             @Override
-            protected Void doInBackground(Integer... params) {
-                Integer id = params[0];
+            protected Void doInBackground(Long... params) {
+                Long id = params[0];
                 if (id != null){
                     City.removeCity(id);
                 }
@@ -499,7 +499,7 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
                 super.onPostExecute(aVoid);
                 mLoader.onContentChanged();
             }
-        };
+        }.execute(id);
     }
 }
 

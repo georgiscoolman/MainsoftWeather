@@ -77,7 +77,7 @@ public class City implements BaseEntity{
     public static String getAllCitiesId(){
         StringBuilder ids = new StringBuilder();
 
-        Dao<City, Integer> dao = null;
+        Dao<City, Long> dao = null;
 
         try {
             dao = DaoFactory.getInstance().getDao(City.class);
@@ -100,9 +100,9 @@ public class City implements BaseEntity{
         return ids.toString();
     }
 
-    public static void removeCity(Integer id){
+    public static void removeCity(Long id){
 
-        Dao<City, Integer> dao = null;
+        Dao<City, Long> dao = null;
 
         try {
             dao = DaoFactory.getInstance().getDao(City.class);

@@ -21,8 +21,8 @@ public class DaoFactory {
         return instance;
     }
 
-    public synchronized <Type> Dao<Type, Integer> getDao(Class<Type> clazz) {
-        return getDao(clazz, Integer.class);
+    public synchronized <Type> Dao<Type, Long> getDao(Class<Type> clazz) {
+        return getDao(clazz, Long.class);
     }
 
     public synchronized <Type, Key extends Number> Dao<Type, Key> getDao(Class<Type> type, Class<Key> key) {
