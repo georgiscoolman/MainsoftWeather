@@ -22,7 +22,8 @@
         android:layout_height="wrap_content"
         android:paddingBottom="16dp"
         android:textSize="21sp"
-        android:textColor="@android:color/black"/>
+        android:textColor="@android:color/black"
+        android:text="Moscow, RU"/>
 
         <LinearLayout
             android:orientation="horizontal"
