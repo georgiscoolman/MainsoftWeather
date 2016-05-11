@@ -2,7 +2,6 @@ package com.example.georg.mainsoftweather;
 
 import android.app.IntentService;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.util.Log;
 
 import com.example.georg.mainsoftweather.orm.DaoFactory;
@@ -25,6 +24,7 @@ public class WeatherService extends IntentService {
     public static final String GET_BY_NAME = "get_by_name";
     public static final String GET_BY_ID = "get_by_id";
     public static final String UPDATE_ALL = "update_all";
+    public static final String SUCCESS = "success";
 
     public static final String NAME = "name";
     public static final String ID = "id";
@@ -35,18 +35,21 @@ public class WeatherService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
+        String action = null;
         if (intent != null) {
-            final String action = intent.getAction();
+            action = intent.getAction();
             if (GET_BY_NAME.equals(action)) {
                 final String name = intent.getStringExtra(NAME);
                 getCityByName(name);
             } else if (GET_BY_ID.equals(action)) {
-                final Long id = intent.getLongExtra(ID,0);
+                final Long id = intent.getLongExtra(ID, 0);
                 getCityById(id);
             } else if (UPDATE_ALL.equals(action)) {
                 updateAll();
             }
         }
+
+        Log.d("WeatherService", "onHandleIntent " + action);
     }
 
     private void getCityByName(String name) {
@@ -56,8 +59,17 @@ public class WeatherService extends IntentService {
         call.enqueue(new Callback<Model>() {
             @Override
             public void onResponse(Response<Model> response, Retrofit retrofit) {
-                if (response != null)
-                    saveWeather(response.body());
+                if (response != null) {
+                    try {
+                        saveWeather(response.body());
+                        sendResult(GET_BY_NAME, true);
+                    } catch (SQLException e) {
+                        sendResult(GET_BY_NAME, false);
+                    }
+                }
+                else {
+                    sendResult(GET_BY_NAME, false);
+                }
             }
 
             @Override
@@ -84,33 +96,39 @@ public class WeatherService extends IntentService {
 
                 if (list!= null){
                     ArrayList<Model> models = (ArrayList<Model>) list.getList();
-                    for (Model model : models) {
-                        saveWeather(model);
+                    try {
+                        for (Model model : models) {
+                            saveWeather(model);
+                        }
+                        sendResult(UPDATE_ALL, true);
+                    } catch (SQLException e) {
+                        sendResult(UPDATE_ALL, false);
                     }
                 }
             }
 
             @Override
             public void onFailure(Throwable t) {
+                sendResult(UPDATE_ALL, false);
             }
         });
     }
 
-    private void saveWeather(Model model) {
+    private void saveWeather(Model model) throws SQLException {
 
         City city = new City(model);
-        try {
-            DaoFactory.getInstance().getDao(City.class).createOrUpdate(city);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        DaoFactory.getInstance().getDao(City.class).createOrUpdate(city);
 
         MyWeather myWeather = new MyWeather(model, city);
-        try {
-            DaoFactory.getInstance().getDao(MyWeather.class).createOrUpdate(myWeather);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        DaoFactory.getInstance().getDao(MyWeather.class).createOrUpdate(myWeather);
 
+    }
+
+    private void sendResult(String action, boolean success){
+        Intent responseIntent = new Intent();
+        responseIntent.setAction(action);
+        responseIntent.addCategory(Intent.CATEGORY_DEFAULT);
+        responseIntent.putExtra(SUCCESS, success);
+        sendBroadcast(responseIntent);
     }
 }

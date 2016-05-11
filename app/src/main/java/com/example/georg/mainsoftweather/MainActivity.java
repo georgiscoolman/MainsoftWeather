@@ -2,9 +2,11 @@ package com.example.georg.mainsoftweather;
 
 import android.Manifest;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Address;
@@ -23,7 +25,6 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.content.Loader;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -32,31 +33,17 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AbsListView;
 import android.widget.TextView;
 
-
-import com.example.georg.mainsoftweather.orm.DaoFactory;
 import com.example.georg.mainsoftweather.orm.PreviewCityWeatherLoader;
 import com.example.georg.mainsoftweather.orm.entitys.City;
-import com.example.georg.mainsoftweather.orm.entitys.MyWeather;
 import com.example.georg.mainsoftweather.preview.PreviewCityWeather;
-import com.example.georg.mainsoftweather.rest.RestApi;
-import com.example.georg.mainsoftweather.rest.pojo.Model;
-import com.example.georg.mainsoftweather.rest.pojo.WeatherList;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-
-import retrofit.Call;
-import retrofit.Callback;
-import retrofit.GsonConverterFactory;
-import retrofit.Response;
-import retrofit.Retrofit;
 
 public class MainActivity extends AppCompatActivity implements SearchView.OnQueryTextListener , LoaderManager.LoaderCallbacks<List<PreviewCityWeather>>{
 
@@ -73,7 +60,6 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
     public static final int SEARCH_GPS_DISTANCE = 10;
 
     public static final String GPS_TAG = "gps";
-    public static final String DATA_TAG = "data";
     public static final String LOADER_TAG = "loader";
     public static final int LOADER_ID = 1;
 
@@ -82,9 +68,9 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
     private CitiesAdapter mAdapter;
     private Loader<List<PreviewCityWeather>> mLoader;
     private ArrayList<PreviewCityWeather> previewCityWeathers;
-    private RestApi service;
-    private Retrofit retrofit;
     private SwipeRefreshLayout swipeRefreshLayout;
+    private GetByNameResultReceiver getByNameResultReceiver;
+    private UpdateAllResultReceiver updateAllResultReceiver;
 
 
     @Override
@@ -100,13 +86,6 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
 
         emptyView = (TextView) findViewById(R.id.tv_empty_list);
 
-        retrofit = new Retrofit.Builder()
-                .baseUrl(RestApi.URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        service = retrofit.create(RestApi.class);
-
         mLoader = getSupportLoaderManager().initLoader(LOADER_ID, null, this);
         swipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swiperefresh);
 
@@ -116,6 +95,16 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
                 refreshWeathers();
             }
         });
+
+        getByNameResultReceiver = new GetByNameResultReceiver();
+        IntentFilter getByNameIntentFilter = new IntentFilter(WeatherService.GET_BY_NAME);
+        getByNameIntentFilter.addCategory(Intent.CATEGORY_DEFAULT);
+        registerReceiver(getByNameResultReceiver,getByNameIntentFilter);
+
+        updateAllResultReceiver = new UpdateAllResultReceiver();
+        IntentFilter updateAlLIntentFilter = new IntentFilter(WeatherService.UPDATE_ALL);
+        updateAlLIntentFilter.addCategory(Intent.CATEGORY_DEFAULT);
+        registerReceiver(updateAllResultReceiver,updateAlLIntentFilter);
     }
 
     private void startSearchLocation() {
@@ -285,59 +274,10 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
         getWeatherDialog = Utils.initProgressDialog(this,getString(R.string.getting_weather_title), String.format(getString(R.string.getting_weather_format), cityName));
         getWeatherDialog.show();
 
-        Call<Model> call = service.getWheatherReportByCityName(cityName);
-
-        call.enqueue(new Callback<Model>() {
-            @Override
-            public void onResponse(Response<Model> response, Retrofit retrofit) {
-
-                AsyncTask<Response<Model>,Void,Void> saveDataTask = new AsyncTask<Response<Model>, Void, Void>() {
-                    @Override
-                    protected Void doInBackground(Response<Model>... params) {
-                        Response<Model> rsp = params[0];
-
-                        if (rsp != null)
-                            saveWeather(rsp.body(),true);
-                        return null;
-                    }
-
-                    @Override
-                    protected void onPostExecute(Void aVoid) {
-                        super.onPostExecute(aVoid);
-                        Utils.dissmissDialog(getWeatherDialog);
-                    }
-                };
-                saveDataTask.execute(response);
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
-                Utils.dissmissDialog(getWeatherDialog);
-                Utils.showOkDialog(MainActivity.this, getString(R.string.no_server), getString(R.string.check_internet));
-            }
-        });
-    }
-
-    private void saveWeather(Model model, boolean refreshPrewiew) {
-
-        City city = new City(model);
-        try {
-            DaoFactory.getInstance().getDao(City.class).createOrUpdate(city);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        MyWeather myWeather = new MyWeather(model, city);
-        try {
-            DaoFactory.getInstance().getDao(MyWeather.class).createOrUpdate(myWeather);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        if (refreshPrewiew)
-        mLoader.onContentChanged();
-
-        Log.d(DATA_TAG, city.toString() + " " + myWeather.toString());
+        Intent intent = new Intent(this, WeatherService.class);
+        intent.setAction(WeatherService.GET_BY_NAME);
+        intent.putExtra(WeatherService.NAME,cityName);
+        startService(intent);
 
     }
 
@@ -426,61 +366,9 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
     }
 
     private void refreshWeathers(){
-
-        new AsyncTask<Void, Void, String>() {
-            @Override
-            protected String doInBackground(Void... params) {
-                return City.getAllCitiesId();
-            }
-
-            @Override
-            protected void onPostExecute(String ids) {
-                super.onPostExecute(ids);
-
-                Call<WeatherList> call = service.getWheatherReportBySeveralCityId(ids);
-
-                call.enqueue(new Callback<WeatherList>() {
-                    @Override
-                    public void onResponse(final Response<WeatherList> response, Retrofit retrofit) {
-
-                        new AsyncTask<Response<WeatherList>, Void, Void>() { // parsing and saving data
-                            @Override
-                            protected Void doInBackground(Response<WeatherList>... params) {
-                                Response<WeatherList> rsp = params[0];
-
-                                WeatherList list = null;
-                                if (rsp != null){
-                                    list = rsp.body();
-                                }
-
-                                if (list!= null){
-                                    ArrayList<Model> models = (ArrayList<Model>) list.getList();
-                                    for (Model model : models) {
-                                        saveWeather(model,false);
-                                    }
-                                    mLoader.onContentChanged();
-                                }
-                                return null;
-                            }
-
-                            @Override
-                            protected void onPostExecute(Void aVoid) {
-                                super.onPostExecute(aVoid);
-                                swipeRefreshLayout.setRefreshing(false);
-                            }
-                        }.execute(response);
-                    }
-
-                    @Override
-                    public void onFailure(Throwable t) {
-                        swipeRefreshLayout.setRefreshing(false);
-                        Utils.showOkDialog(MainActivity.this, getString(R.string.no_server), getString(R.string.check_internet));
-                    }
-                });
-
-            }
-        }.execute();
-
+        Intent intent = new Intent(this, WeatherService.class);
+        intent.setAction(WeatherService.UPDATE_ALL);
+        startService(intent);
     }
 
     public void removeCity(long id){
@@ -500,6 +388,47 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
                 mLoader.onContentChanged();
             }
         }.execute(id);
+    }
+
+    public class GetByNameResultReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            boolean success = intent.getBooleanExtra(WeatherService.SUCCESS,false);
+            Utils.dissmissDialog(getWeatherDialog);
+            if (success){
+                mLoader.onContentChanged();
+            }else{
+                Utils.showOkDialog(MainActivity.this, getString(R.string.no_server), getString(R.string.check_internet));
+            }
+
+            Log.d("GetByNameResultReceiver", "onReceive " + success);
+        }
+    }
+
+    public class UpdateAllResultReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            boolean success = intent.getBooleanExtra(WeatherService.SUCCESS,false);
+            swipeRefreshLayout.setRefreshing(false);
+            if (success){
+                mLoader.onContentChanged();
+            }else{
+                Utils.showOkDialog(MainActivity.this, getString(R.string.no_server), getString(R.string.check_internet));
+            }
+
+            Log.d("UpdateAllResultReceiver", "onReceive " + success);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(updateAllResultReceiver);
+        unregisterReceiver(getByNameResultReceiver);
     }
 }
 
