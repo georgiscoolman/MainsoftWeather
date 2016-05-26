@@ -1,6 +1,7 @@
 package com.example.georg.mainsoftweather;
 
 import android.app.IntentService;
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.util.Log;
 
@@ -21,10 +22,15 @@ import retrofit.Retrofit;
 
 public class WeatherService extends IntentService {
 
-    public static final String GET_BY_NAME = "get_by_name";
-    public static final String GET_BY_ID = "get_by_id";
-    public static final String UPDATE_ALL = "update_all";
-    public static final String SUCCESS = "success";
+    public static final int FINISHED_FAIL = 0;
+    public static final int FINISHED_SUCCESS = 1;
+
+    public static final int TASK_GET_BY_NAME = 2;
+    public static final int TASK_GET_BY_ID = 3;
+    public static final int TASK_UPDATE_ALL = 4;
+
+    public static final String PARAM_PINTENT = "param_intent";
+    public static final String PARAM_TASK_CODE = "param_task_code";
 
     public static final String NAME = "name";
     public static final String ID = "id";
@@ -35,24 +41,35 @@ public class WeatherService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        String action = null;
+
+        int taskCode = 0;
+
+        PendingIntent pi = intent.getParcelableExtra(WeatherService.PARAM_PINTENT);
+
         if (intent != null) {
-            action = intent.getAction();
-            if (GET_BY_NAME.equals(action)) {
-                final String name = intent.getStringExtra(NAME);
-                getCityByName(name);
-            } else if (GET_BY_ID.equals(action)) {
-                final Long id = intent.getLongExtra(ID, 0);
-                getCityById(id);
-            } else if (UPDATE_ALL.equals(action)) {
-                updateAll();
+
+            taskCode = intent.getIntExtra(PARAM_TASK_CODE,5);
+
+            switch (taskCode){
+                case TASK_GET_BY_NAME:
+                    final String name = intent.getStringExtra(NAME);
+                    getCityByName(name,pi);
+                    break;
+                case TASK_GET_BY_ID:
+                    final Long id = intent.getLongExtra(ID, 0);
+                    getCityById(id,pi);
+                    break;
+                case TASK_UPDATE_ALL:
+                    updateAll(pi);
+                    break;
             }
+
         }
 
-        Log.d("WeatherService", "onHandleIntent " + action);
+        Log.d("WeatherService", "onHandleIntent " + taskCode);
     }
 
-    private void getCityByName(String name) {
+    private void getCityByName(String name, final PendingIntent pi) {
 
         Call<Model> call = RetrofitServiceFactory.getInstance().getWheatherReportByCityName(name);
 
@@ -62,13 +79,13 @@ public class WeatherService extends IntentService {
                 if (response != null) {
                     try {
                         saveWeather(response.body());
-                        sendResult(GET_BY_NAME, true);
+                        sendResult(true, pi);
                     } catch (SQLException e) {
-                        sendResult(GET_BY_NAME, false);
+                        sendResult(false, pi);
                     }
                 }
                 else {
-                    sendResult(GET_BY_NAME, false);
+                    sendResult(false, pi);
                 }
             }
 
@@ -78,11 +95,11 @@ public class WeatherService extends IntentService {
         });
     }
 
-    private void getCityById(Long id) {
+    private void getCityById(Long id, PendingIntent pi) {
 
     }
 
-    private void updateAll() {
+    private void updateAll(final PendingIntent pi) {
 
         Call<WeatherList> call = RetrofitServiceFactory.getInstance().getWheatherReportBySeveralCityId(City.getAllCitiesId());
 
@@ -100,16 +117,16 @@ public class WeatherService extends IntentService {
                         for (Model model : models) {
                             saveWeather(model);
                         }
-                        sendResult(UPDATE_ALL, true);
+                        sendResult(true, pi);
                     } catch (SQLException e) {
-                        sendResult(UPDATE_ALL, false);
+                        sendResult(false, pi);
                     }
                 }
             }
 
             @Override
             public void onFailure(Throwable t) {
-                sendResult(UPDATE_ALL, false);
+                sendResult(false, pi);
             }
         });
     }
@@ -124,11 +141,21 @@ public class WeatherService extends IntentService {
 
     }
 
-    private void sendResult(String action, boolean success){
+    private void sendResult(boolean success, PendingIntent pi){
+
         Intent responseIntent = new Intent();
-        responseIntent.setAction(action);
-        responseIntent.addCategory(Intent.CATEGORY_DEFAULT);
-        responseIntent.putExtra(SUCCESS, success);
-        sendBroadcast(responseIntent);
+
+        int successRes = FINISHED_FAIL;
+
+        if (success){
+            successRes = FINISHED_SUCCESS;
+        }
+
+        try {
+            pi.send(WeatherService.this, successRes,responseIntent);
+        } catch (PendingIntent.CanceledException e) {
+            e.printStackTrace();
+        }
+
     }
 }

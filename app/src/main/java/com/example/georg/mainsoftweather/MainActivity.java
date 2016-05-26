@@ -1,6 +1,7 @@
 package com.example.georg.mainsoftweather;
 
 import android.Manifest;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -69,8 +70,6 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
     private Loader<List<PreviewCityWeather>> mLoader;
     private ArrayList<PreviewCityWeather> previewCityWeathers;
     private SwipeRefreshLayout swipeRefreshLayout;
-    private GetByNameResultReceiver getByNameResultReceiver;
-    private UpdateAllResultReceiver updateAllResultReceiver;
 
 
     @Override
@@ -96,15 +95,6 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
             }
         });
 
-        getByNameResultReceiver = new GetByNameResultReceiver();
-        IntentFilter getByNameIntentFilter = new IntentFilter(WeatherService.GET_BY_NAME);
-        getByNameIntentFilter.addCategory(Intent.CATEGORY_DEFAULT);
-        registerReceiver(getByNameResultReceiver,getByNameIntentFilter);
-
-        updateAllResultReceiver = new UpdateAllResultReceiver();
-        IntentFilter updateAlLIntentFilter = new IntentFilter(WeatherService.UPDATE_ALL);
-        updateAlLIntentFilter.addCategory(Intent.CATEGORY_DEFAULT);
-        registerReceiver(updateAllResultReceiver,updateAlLIntentFilter);
     }
 
     private void startSearchLocation() {
@@ -274,9 +264,13 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
         getWeatherDialog = Utils.initProgressDialog(this,getString(R.string.getting_weather_title), String.format(getString(R.string.getting_weather_format), cityName));
         getWeatherDialog.show();
 
+        PendingIntent pi = createPendingResult(WeatherService.TASK_GET_BY_NAME, new Intent(), 0);
+
         Intent intent = new Intent(this, WeatherService.class);
-        intent.setAction(WeatherService.GET_BY_NAME);
+        intent.putExtra(WeatherService.PARAM_PINTENT,pi);
+        intent.putExtra(WeatherService.PARAM_TASK_CODE,WeatherService.TASK_GET_BY_NAME);
         intent.putExtra(WeatherService.NAME,cityName);
+
         startService(intent);
 
     }
@@ -366,8 +360,13 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
     }
 
     private void refreshWeathers(){
+
+        PendingIntent pi = createPendingResult(WeatherService.TASK_UPDATE_ALL, new Intent(), 0);
+
         Intent intent = new Intent(this, WeatherService.class);
-        intent.setAction(WeatherService.UPDATE_ALL);
+        intent.putExtra(WeatherService.PARAM_PINTENT,pi);
+        intent.putExtra(WeatherService.PARAM_TASK_CODE, WeatherService.TASK_UPDATE_ALL);
+
         startService(intent);
     }
 
@@ -390,45 +389,38 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
         }.execute(id);
     }
 
-    public class GetByNameResultReceiver extends BroadcastReceiver {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-            boolean success = intent.getBooleanExtra(WeatherService.SUCCESS,false);
-            Utils.dissmissDialog(getWeatherDialog);
-            if (success){
-                mLoader.onContentChanged();
-            }else{
-                Utils.showOkDialog(MainActivity.this, getString(R.string.no_server), getString(R.string.check_internet));
-            }
-
-            Log.d("GetByNameResultReceiver", "onReceive " + success);
-        }
-    }
-
-    public class UpdateAllResultReceiver extends BroadcastReceiver {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-            boolean success = intent.getBooleanExtra(WeatherService.SUCCESS,false);
-            swipeRefreshLayout.setRefreshing(false);
-            if (success){
-                mLoader.onContentChanged();
-            }else{
-                Utils.showOkDialog(MainActivity.this, getString(R.string.no_server), getString(R.string.check_internet));
-            }
-
-            Log.d("UpdateAllResultReceiver", "onReceive " + success);
-        }
-    }
-
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        unregisterReceiver(updateAllResultReceiver);
-        unregisterReceiver(getByNameResultReceiver);
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        Log.d("WeatherServiceResult", "requestCode = " + requestCode + ", resultCode = " + resultCode);
+
+        boolean success = false;
+        if (resultCode == WeatherService.FINISHED_SUCCESS)
+            success = true;
+
+        switch (requestCode){
+            case WeatherService.TASK_GET_BY_NAME:
+                Utils.dissmissDialog(getWeatherDialog);
+                if (success){
+                    mLoader.onContentChanged();
+                }else{
+                    Utils.showOkDialog(MainActivity.this, getString(R.string.no_server), getString(R.string.check_internet));
+                }
+                break;
+
+            case WeatherService.TASK_GET_BY_ID:
+
+                break;
+
+            case WeatherService.TASK_UPDATE_ALL:
+                swipeRefreshLayout.setRefreshing(false);
+                if (success){
+                    mLoader.onContentChanged();
+                }else{
+                    Utils.showOkDialog(MainActivity.this, getString(R.string.no_server), getString(R.string.check_internet));
+                }
+                break;
+        }
     }
 }
 
